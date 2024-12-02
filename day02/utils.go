@@ -78,6 +78,13 @@ func (l Report) Check() bool {
 
 }
 
+func (r Report) RemoveLevel(i int) Report {
+	result := make(Report, 0, len(r)-1)
+	result = append(result, r[:i]...)
+	result = append(result, r[i+1:]...)
+	return result
+}
+
 func (reports Reports) CountFailures() int {
 	var n_failures int
 	for _, r := range reports {

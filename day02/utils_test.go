@@ -1,8 +1,11 @@
 package day02
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
-func TestLevel(t *testing.T) {
+func TestLevelCheck(t *testing.T) {
 	var l Report
 	for i := 0; i < 10; i++ {
 		l = append(l, i)
@@ -36,6 +39,45 @@ func TestLevel(t *testing.T) {
 	l = Report{10, 1}
 	if got = l.Check(); got {
 		t.Errorf("got %v, wanted false, level: %v", got, l)
+	}
+
+}
+
+func testEq(a, b Report) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func TestLevelDelete(t *testing.T) {
+	l := Report{1, 2, 3}
+	fmt.Printf("l before removal: %v\n", l)
+
+	got := l.RemoveLevel(0)
+	fmt.Printf("l after removal: %v\n", l)
+
+	want := Report{2, 3}
+
+	if !testEq(got, want) {
+		t.Errorf("got %v, wanted %v", got, want)
+
+	}
+
+	fmt.Printf("l after removal: %v", l)
+	l = Report{1, 2, 3} // Reset l to original
+
+	got = l.RemoveLevel(1)
+	want = Report{1, 3}
+
+	if !testEq(got, want) {
+		t.Errorf("got %v, wanted %v", got, want)
+
 	}
 
 }
