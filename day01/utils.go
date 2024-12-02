@@ -75,7 +75,7 @@ func CountElement(ids []int, el int) int {
 		return 0
 	}
 	var count int = 1
-	for i := pos + 1; i < len(ids)-1; i++ {
+	for i := pos + 1; i <= len(ids)-1; i++ {
 		if ids[i] == el {
 			count += 1
 		} else {

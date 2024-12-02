@@ -24,3 +24,14 @@ func TestCountElement(t *testing.T) {
 	}
 
 }
+
+func TestSimilarityScore(t *testing.T) {
+	x := []int{1, 2, 3}
+	y := []int{1, 1, 2, 3, 3, 3, 3}
+	got := CompSimilarityScore(x, y)
+	want := 1*2 + 2*1 + 3*4
+	if got != want {
+		t.Errorf("got %v, wanted %v", got, want)
+	}
+
+}
