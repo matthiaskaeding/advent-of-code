@@ -10,6 +10,7 @@ import (
 )
 
 func ReadIds(file string) ([]int, []int, error) {
+	// Read lines, loop over them and get the ids
 	var ids0 []int
 	var ids1 []int
 	fmt.Println(file)
@@ -42,6 +43,7 @@ func ReadIds(file string) ([]int, []int, error) {
 
 	}
 
+	// Return sorted ids
 	slices.Sort(ids0)
 	slices.Sort(ids1)
 
@@ -62,5 +64,24 @@ func SumDistances(ids0 []int, ids1 []int, e error) int {
 		}
 	}
 	return sum
+
+}
+
+func CountElement(ids []int, el int) int {
+	// Counts how often el appears in slice ids
+	// ids must be ordered
+	pos, is_present := slices.BinarySearch(ids, el)
+	if !is_present {
+		return 0
+	}
+	var count int = 1
+	for i := pos + 1; i < len(ids)-1; i++ {
+		if ids[i] == el {
+			count += 1
+		} else {
+			break
+		}
+	}
+	return count
 
 }
