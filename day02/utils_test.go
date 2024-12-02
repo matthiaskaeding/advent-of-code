@@ -81,3 +81,36 @@ func TestLevelDelete(t *testing.T) {
 	}
 
 }
+
+func TestCheckWithRemovel(t *testing.T) {
+	l := Report{1, 2, 3}
+	got := l.CheckWithRemoval()
+	if !got {
+		t.Errorf("got %v, wanted true, report: %v", got, l)
+	}
+
+	l = Report{1, 10, 3}
+	got = l.CheckWithRemoval()
+	if !got {
+		t.Errorf("got %v, wanted true, report: %v", got, l)
+	}
+
+	l = Report{1, 10, 11}
+	got = l.CheckWithRemoval()
+	if !got {
+		t.Errorf("Wanted true, report: %v", l)
+	}
+
+	l = Report{999, 10, 11}
+	got = l.CheckWithRemoval()
+	if !got {
+		t.Errorf("Wanted true, report: %v", l)
+	}
+
+	l = Report{999, 10, 11, 849384934}
+	got = l.CheckWithRemoval()
+	if got {
+		t.Errorf("Wanted false, report: %v", l)
+	}
+
+}
