@@ -3,7 +3,7 @@ package day02
 import "testing"
 
 func TestLevel(t *testing.T) {
-	var l Level
+	var l Report
 	for i := 0; i < 10; i++ {
 		l = append(l, i)
 	}
@@ -13,24 +13,29 @@ func TestLevel(t *testing.T) {
 		t.Errorf("got %v, wanted %v", got, want)
 	}
 
-	l2 := Level{1, 2}
-	got2 := l2.Check()
-	if !got2 {
-		t.Errorf("got %v, wanted true", got2)
+	l = Report{1, 2}
+	got = l.Check()
+	if !got {
+		t.Errorf("got %v, wanted true", got)
 	}
 
-	l3 := Level{1, 10, 1}
-	if got3 := l3.Check(); got3 {
-		t.Errorf("got %v, wanted false", got3)
+	l = Report{1, 2, 1}
+	if got = l.Check(); got {
+		t.Errorf("got %v, wanted false, %v", got, l)
 	}
-	l4 := Level{10, 1}
-	if got4 := l4.Check(); !got4 {
-		t.Errorf("got %v, wanted true", got4)
+	l = Report{2, 1}
+	if got = l.Check(); !got {
+		t.Errorf("got %v, wanted true, Report: %v", got, l)
 	}
 
-	l5 := Level{10, 1, 100}
-	if got5 := l5.Check(); got5 {
-		t.Errorf("got %v, wanted false", got5)
+	l = Report{2, 1, 5}
+	if got = l.Check(); got {
+		t.Errorf("got %v, wanted false, Report: %v", got, l)
+	}
+
+	l = Report{10, 1}
+	if got = l.Check(); got {
+		t.Errorf("got %v, wanted false, level: %v", got, l)
 	}
 
 }

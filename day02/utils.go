@@ -8,8 +8,10 @@ import (
 	"strings"
 )
 
-type Level []int
-type Reports []Level
+const n_reports = 1000
+
+type Report []int
+type Reports [n_reports]Report
 
 func ReadReports(file string) (Reports, error) {
 
@@ -33,34 +35,57 @@ func ReadReports(file string) (Reports, error) {
 				len(nums), line)
 
 		}
-		var this_level Level
+		var report Report
 		for _, num := range nums {
 			val, err := strconv.Atoi(num)
 			if err != nil {
 				panic(err)
 			}
-			this_level = append(this_level, val)
+			report = append(report, val)
 		}
-		reports = append(reports, this_level)
+		reports[i] = report
 		i++
+	}
+
+	if i != n_reports {
+		err := fmt.Errorf("expectring 1000 reports, got %v", i)
+		return reports, err
 	}
 
 	return reports, nil
 
 }
 
-func (l Level) Check() bool {
+func (l Report) Check() bool {
 	n := len(l)
-	is_incr := l[1]-l[0] > 0
+	is_incr := l[1] > l[0]
 
-	for i := 2; i < n; i++ {
+	for i := 1; i < n; i++ {
 		diff := l[i] - l[i-1]
 		if is_incr && diff < 0 || !is_incr && diff > 0 {
 			return false
 		}
+		abs_diff := diff
+		if !is_incr {
+			abs_diff = -diff
+		}
+		if abs_diff == 0 || abs_diff > 3 {
+			return false
+		}
+
 	}
 	return true
 
+}
+
+func (reports Reports) CountFailures() int {
+	var n_failures int
+	for _, r := range reports {
+		if !r.Check() {
+			n_failures++
+		}
+	}
+	return n_failures
 }
 
 func Solve() {
@@ -70,4 +95,8 @@ func Solve() {
 	}
 
 	fmt.Println(reports[:3])
+	n_failures := reports.CountFailures()
+	n_safe := n_reports - n_failures
+	fmt.Printf("Number of failures: %v, number of safe reports: %v\n", n_failures, n_safe)
+
 }
