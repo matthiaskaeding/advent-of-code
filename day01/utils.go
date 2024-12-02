@@ -85,3 +85,13 @@ func CountElement(ids []int, el int) int {
 	return count
 
 }
+
+func CompSimilarityScore(ids0 []int, ids1 []int) int {
+	var score int
+	for _, id0 := range ids0 {
+		count := CountElement(ids1, id0)
+		score += id0 * count
+	}
+	return score
+
+}
