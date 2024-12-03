@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 )
 
@@ -41,22 +42,59 @@ func ReadLine(file string) (string, error) {
 
 }
 
+// Finds value x <= target minimising target - x
+func GetRollVal(x []int, target int) (int, bool) {
+	if x[0] > target {
+		return 0, false
+	}
+	i, found := slices.BinarySearch(x, target)
+	if found {
+		return target, true
+	}
+	if i == 0 {
+		return x[0], true
+	}
+	return x[i-1], true
+
+}
+
 func GetMul(line string) ([]pair, error) {
 	sMul := `mul\((\d+),(\d+)\)`
+	reMul := regexp.MustCompile(sMul)
 
-	re := regexp.MustCompile(sMul)
-	matches := re.FindAllString(line, -1)
+	posMatches := FindAllIndices(line, sMul, false)
+	posDont := FindAllIndices(line, "don't()", true)
+	posDo := FindAllIndices(line, "do()", true)
+	// Because by default do() is activated, we prepend posDo with 0
+	posDo = append([]int{0}, posDo...)
 
-	pairs := make([]pair, len(matches))
+	if len(posDont) < 2 {
+		panic("There must be at least 2 dont positions")
+	}
+	if len(posDo) < 2 {
+		panic("There must be at least 2 do positions")
+	}
+	var pairs []pair
 
-	if matches == nil {
+	if len(posMatches) == 0 {
 		return pairs, fmt.Errorf("no match found in string")
 	}
 
-	re_num := regexp.MustCompile(`\d+`)
+	reNum := regexp.MustCompile(`\d+`)
 
-	for i, m := range matches {
-		nums := re_num.FindAllString(m, 2)
+	for _, posMatch := range posMatches {
+
+		iPosDont, foundDont := GetRollVal(posDont, posMatch)
+		iPosDo, foundDo := GetRollVal(posDo, posMatch)
+
+		if iPosDont > iPosDo && foundDont && foundDo {
+			continue
+		}
+
+		// If we are here its find and we can go on
+		mulExpr := reMul.FindString(line[posMatch:])
+
+		nums := reNum.FindAllString(mulExpr, 2)
 		if nums == nil {
 			return pairs, fmt.Errorf("no numbers")
 		}
@@ -69,7 +107,7 @@ func GetMul(line string) ([]pair, error) {
 			panic(err)
 		}
 		pair := NewPair(x, y)
-		pairs[i] = pair
+		pairs = append(pairs, pair)
 	}
 
 	return pairs, nil
@@ -84,9 +122,17 @@ func Prod(pairs []pair) int {
 	return prodSum
 }
 
-func FindAllIndicesRegex(s, substr string) []int {
+func FindAllIndices(s, substr string, literal bool) []int {
 	var indices []int
-	re := regexp.MustCompile(regexp.QuoteMeta(substr))
+	var re *regexp.Regexp
+
+	if literal {
+		re = regexp.MustCompile(regexp.QuoteMeta(substr))
+	} else {
+		re = regexp.MustCompile(substr)
+
+	}
+
 	matches := re.FindAllStringIndex(s, -1)
 
 	for _, match := range matches {
