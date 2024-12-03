@@ -56,10 +56,6 @@ func ReadReports(file string) (Reports, error) {
 
 }
 
-func get_expr(s string) string[] {
-
-}
-
 func check_diff(x int, x_lag int, is_incr bool) bool {
 	diff := x - x_lag
 	if is_incr && diff < 0 || !is_incr && diff > 0 {

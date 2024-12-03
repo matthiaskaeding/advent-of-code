@@ -42,7 +42,9 @@ func ReadLine(file string) (string, error) {
 }
 
 func GetMul(line string) ([]pair, error) {
-	re := regexp.MustCompile(`mul\((\d+),(\d+)\)`)
+	sMul := `mul\((\d+),(\d+)\)`
+
+	re := regexp.MustCompile(sMul)
 	matches := re.FindAllString(line, -1)
 
 	pairs := make([]pair, len(matches))
@@ -80,6 +82,18 @@ func Prod(pairs []pair) int {
 		prodSum += pair.prod
 	}
 	return prodSum
+}
+
+func FindAllIndicesRegex(s, substr string) []int {
+	var indices []int
+	re := regexp.MustCompile(regexp.QuoteMeta(substr))
+	matches := re.FindAllStringIndex(s, -1)
+
+	for _, match := range matches {
+		indices = append(indices, match[0])
+	}
+
+	return indices
 }
 
 func Solve() {
