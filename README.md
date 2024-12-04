@@ -1,3 +1,1 @@
-# Advent of code 2024 
-
-## Using this to improve Go skills
+# Advent of code 2024 via Golang
