@@ -21,12 +21,7 @@ func NewMat(lines []string) (Mat, error) {
 			return Mat{}, fmt.Errorf("line %v does not have the same width as first line", i)
 		}
 	}
-	if n != k {
-		return Mat{}, fmt.Errorf("input does not give a symmetric matrix")
-	}
-
 	return Mat{lines, n, k}, nil
-
 }
 
 func (m Mat) GetCol(i int) (string, error) {
@@ -107,6 +102,52 @@ func (m Mat) GetSubDiagonal(i int, j int, direction string) (string, error) {
 	return subDiag, nil
 }
 
+// Starting from row 0, at coln, get subdiagiona
+// So for instance for this matrix
+// ABC
+// DEF
+// GHI
+// The SubDiagonal for coln = 1 would be BD
+// The SubDiagonal for coln = 2 would be CEG (the diagional)
+// i = row start point
+// j = column start point
+// direction = where to go from
+func (m Mat) GetSubDiagonalShort(i int, j int, direction string) (string, error) {
+	if i >= m.k || i < 0 {
+		return "", fmt.Errorf("i must be in [0, m.k] but is %v. m.k is %v", i, m.k)
+	}
+	if j >= m.k || j < 0 {
+		return "", fmt.Errorf("j must be in [0, m.k] but is %v", j)
+	}
+	var subDiag string
+	var di, dj int
+	// Define where to go from start point based on direction
+	switch direction {
+	case "leftdown":
+		di = 1  // rowwise down
+		dj = -1 // colwise right
+	case "rightdown":
+		di = 1
+		dj = 1
+	case "leftup":
+		di = -1
+		dj = -1
+	case "rightup":
+		di = -1
+		dj = 1
+	default:
+		return subDiag,
+			fmt.Errorf("direction must be in (leftdown, rightdown, leftup, rightup)")
+	}
+	for i >= 0 && i < m.n && j >= 0 && j < m.k && len(subDiag) < 3 {
+		el := string(m.lines[i][j])
+		subDiag += el
+		i += di
+		j += dj
+	}
+	return subDiag, nil
+}
+
 func ReadLines(file string) (Mat, error) {
 
 	var lines []string
@@ -133,44 +174,26 @@ func ReadLines(file string) (Mat, error) {
 func CountXmas(s string) int {
 	return strings.Count(s, "XMAS") + strings.Count(s, "SAMX")
 }
+func GotMas(s string) bool {
+	return (strings.Count(s, "MAS") + strings.Count(s, "SAM")) > 0
+}
 
 func Solve() {
 	mat, err := ReadLines("day04/input.txt")
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < 3; i++ {
-		fmt.Println(mat.lines[i])
-	}
-	fmt.Printf("\nNum   lines %v", mat.n)
-	fmt.Printf("\nWidth lines %v\n", mat.k)
-	col0, _ := mat.GetCol(0)
-	fmt.Printf("\nCol 0 %v\n", col0)
-	row0, _ := mat.GetRow(0)
-	fmt.Printf("\nRow 0 %v\n", row0)
 
-	// Now count all the ways
-	num_xmas := CountXmas(mat.GetDiagonal())
+	// Simply shift cell by cell and count
+	num_xmas := 0
 	for i := 0; i < mat.n; i++ {
-		ColI, _ := mat.GetCol(i)
-		RowI, _ := mat.GetRow(i)
-		num_xmas += CountXmas(ColI)
-		num_xmas += CountXmas(RowI)
-	}
-	for i := 1; i < mat.n; i++ {
-		s0, _ := mat.GetSubDiagonal(0, i, "leftdown")
-		num_xmas += CountXmas(s0)
-		s1, _ := mat.GetSubDiagonal(0, i, "rightdown")
-		num_xmas += CountXmas(s1)
-
-		if i != mat.n-1 {
-			s2, _ := mat.GetSubDiagonal(mat.n-1, i, "rightup")
-			s3, _ := mat.GetSubDiagonal(mat.n-1, i, "leftup")
-			num_xmas += CountXmas(s2)
-			num_xmas += CountXmas(s3)
-
+		for j := 0; j < mat.k; j++ {
+			s0, _ := mat.GetSubDiagonalShort(i, j, "rightdown")
+			s1, _ := mat.GetSubDiagonalShort(i, j+2, "leftdown")
+			if GotMas(s0) && GotMas(s1) {
+				num_xmas++
+			}
 		}
-
 	}
 
 	fmt.Printf("Solution is: %v\n", num_xmas)

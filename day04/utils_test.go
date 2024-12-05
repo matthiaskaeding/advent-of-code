@@ -26,11 +26,6 @@ func TestMat(t *testing.T) {
 		t.Errorf("Col 0 must be %v but is %v", want, got)
 	}
 
-	lines = []string{"ABC", "AFP", "SJK", "AAR"}
-	mat, err := NewMat(lines)
-	if err == nil {
-		t.Errorf("must throw error but is %v", err)
-	}
 	// Matrix:
 	// ABC
 	// DEF
@@ -67,6 +62,30 @@ func TestMat(t *testing.T) {
 	want = "HD"
 	if got != want {
 		t.Errorf("Must be %v but is %v", want, got)
+	}
+
+	// Matrix:
+	// ABCD
+	// DEFG
+	// GHIJ
+	lines = []string{"ABCD", "DEFG", "GHIJ"}
+	mat, _ = NewMat(lines)
+
+	got, err := mat.GetSubDiagonalShort(0, 0, "rightdown")
+	want = "AEI"
+	if err != nil {
+		t.Error(err)
+	}
+	if got != want {
+		t.Errorf("Must be %v but is %v %v", want, got, len(got))
+	}
+	got, err = mat.GetSubDiagonalShort(0, 1, "rightdown")
+	want = "BFJ"
+	if err != nil {
+		t.Error(err)
+	}
+	if got != want {
+		t.Errorf("Must be %v but is %v %v", want, got, len(got))
 	}
 
 }
