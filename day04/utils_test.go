@@ -10,13 +10,18 @@ func TestMat(t *testing.T) {
 	if mat.n != 3 {
 		t.Errorf("mat must have 3 rows, has %v", mat.n)
 	}
-	got := mat.GetCol(0)
+	got, _ := mat.GetCol(0)
 	want := "AAS"
 	if got != want {
 		t.Errorf("Col 0 must be %v but is %v", want, got)
 	}
-	got = mat.GetCol(1)
+	got, _ = mat.GetCol(1)
 	want = "BFJ"
+	if got != want {
+		t.Errorf("Col 0 must be %v but is %v", want, got)
+	}
+	got = mat.GetDiagonal()
+	want = "AFK"
 	if got != want {
 		t.Errorf("Col 0 must be %v but is %v", want, got)
 	}
@@ -25,6 +30,43 @@ func TestMat(t *testing.T) {
 	mat, err := NewMat(lines)
 	if err == nil {
 		t.Errorf("must throw error but is %v", err)
+	}
+	// Matrix:
+	// ABC
+	// DEF
+	// GHI
+	lines = []string{"ABC", "DEF", "GHI"}
+	mat, _ = NewMat(lines)
+	got, _ = mat.GetSubDiagonal(0, 0, "rightdown")
+	want = "AEI"
+	if got != want {
+		t.Errorf("Must be %v but is %v", want, got)
+	}
+	got, _ = mat.GetSubDiagonal(0, 1, "leftdown")
+	want = "BD"
+	if got != want {
+		t.Errorf("Must be %v but is %v", want, got)
+	}
+
+	got, _ = mat.GetSubDiagonal(2, 1, "rightup")
+	want = "HF"
+	if got != want {
+		t.Errorf("Must be %v but is %v", want, got)
+	}
+	got, _ = mat.GetSubDiagonal(2, 2, "rightup")
+	want = "I"
+	if got != want {
+		t.Errorf("Must be %v but is %v", want, got)
+	}
+	got, _ = mat.GetSubDiagonal(2, 2, "leftup")
+	want = "IEA"
+	if got != want {
+		t.Errorf("Must be %v but is %v", want, got)
+	}
+	got, _ = mat.GetSubDiagonal(2, 1, "leftup")
+	want = "HD"
+	if got != want {
+		t.Errorf("Must be %v but is %v", want, got)
 	}
 
 }
