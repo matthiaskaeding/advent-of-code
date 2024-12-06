@@ -14,7 +14,7 @@ type PageOrdering struct {
 	n    int
 }
 
-func NewOrderedPair(data map[int]int) PageOrdering {
+func NewPageOrdering(data map[int]int) PageOrdering {
 	return PageOrdering{data, len(data)}
 }
 func (p PageOrdering) GetPageThatMustFollow(k int) (int, bool) {
@@ -25,7 +25,12 @@ func (p PageOrdering) GetPageThatMustFollow(k int) (int, bool) {
 type Update []int
 
 type Updates struct {
-	data []Update
+	data          []Update
+	pagesOrdering PageOrdering
+}
+
+func (u Updates) Len() int {
+	return len(u.data)
 }
 
 func (p Updates) GetUpdate(i int) Update {
@@ -65,16 +70,39 @@ func (u Update) IsValidUpdate(pageOrdering PageOrdering) bool {
 	return true
 }
 
-func ReadInput(file string) (PageOrdering, Updates, error) {
+func (updates Updates) IsValidUpdate(i int) bool {
+	u := updates.GetUpdate(i)
+	return u.IsValidUpdate(updates.pagesOrdering)
+}
+
+func (u Update) GetMiddleVal() int {
+	n := len(u)
+	var i int = (n+1)/2 - 1
+	return u[i]
+}
+
+func (updates Updates) GetSumValidUpdates() int {
+	sum := 0
+	for i := 0; i < updates.Len(); i++ {
+		isValid := updates.IsValidUpdate(i)
+		if isValid {
+			middleVal := updates.GetUpdate(i).GetMiddleVal()
+			sum += middleVal
+		}
+	}
+	return sum
+}
+
+func ReadInput(file string) (Updates, error) {
 	var (
-		pairs       PageOrdering
-		pageNumbers Updates
+		updates     Updates
+		updatesData []Update
 	)
 	pairData := make(map[int]int)
 
 	inFile, err := os.Open(file)
 	if err != nil {
-		return pairs, pageNumbers, err
+		return updates, err
 	}
 	defer inFile.Close()
 
@@ -82,19 +110,21 @@ func ReadInput(file string) (PageOrdering, Updates, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "|") {
+			// page ordering
 			parts := strings.SplitN(line, "|", 2)
 			k, err := strconv.Atoi(parts[0])
 			if err != nil {
-				return pairs, pageNumbers, err
+				return updates, err
 			}
 			v, err := strconv.Atoi(parts[1])
 			if err != nil {
-				return pairs, pageNumbers, err
+				return updates, err
 			}
 			pairData[k] = v
 		} else if strings.Contains(line, ",") {
+			// Pages for update
 			parts := strings.Split(line, ",")
-			lineData := make([]int, len(parts))
+			lineData := make(Update, len(parts))
 
 			for i, p := range parts {
 				v, err := strconv.Atoi(p)
@@ -103,23 +133,26 @@ func ReadInput(file string) (PageOrdering, Updates, error) {
 				}
 				lineData[i] = v
 			}
-			pageNumbers.data = append(pageNumbers.data, lineData)
+			updatesData = append(updatesData, lineData)
 		} else {
 			continue
 		}
 	}
-	pairs = NewOrderedPair(pairData)
-	return pairs, pageNumbers, nil
+	pageOrdering := NewPageOrdering(pairData)
+	updates = Updates{updatesData, pageOrdering}
+	return updates, nil
 }
 
 func Solve() {
-	pageOrdering, updates, err := ReadInput("day05/input.txt")
+	updates, err := ReadInput("day05/input.txt")
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Pairs: %v\n", pageOrdering)
+	fmt.Printf("Pairs: %v\n", updates.pagesOrdering)
 	fmt.Printf("Updates: %v\n", updates.GetUpdate(0))
+	middleSum := updates.GetSumValidUpdates()
+	fmt.Printf("Middle sum: %v\n", middleSum)
 
 	// Do something
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func TestValid(t *testing.T) {
-	pageOrdering, updates, err := ReadInput("input_example.txt")
+	updates, err := ReadInput("input_example.txt")
 	if err != nil {
 		t.Error(err)
 	}
@@ -15,6 +15,15 @@ func TestValid(t *testing.T) {
 	got := u.GetPagesBefore(0)
 	if len(got) != 0 {
 		t.Errorf("%v must be len 0", got)
+	}
+
+	middleValue := updates.GetUpdate(0).GetMiddleVal()
+	if middleValue != 61 {
+		t.Errorf("Middle value must be 61 but is %v", middleValue)
+	}
+	middleValue = updates.GetUpdate(2).GetMiddleVal()
+	if middleValue != 29 {
+		t.Errorf("Middle value must be 29 but is %v", middleValue)
 	}
 
 	got = u.GetPagesBefore(1)
@@ -28,17 +37,22 @@ func TestValid(t *testing.T) {
 		t.Errorf("wanted %v got %v", want, got)
 	}
 
-	gotV := u.IsValidUpdate(pageOrdering)
+	gotV := u.IsValidUpdate(updates.pagesOrdering)
 	wantV := true
 	if gotV != wantV {
 		t.Errorf("wanted %v got %v", wantV, gotV)
 	}
 
-	u = updates.GetUpdate(3)
-	gotV = u.IsValidUpdate(pageOrdering)
+	gotV = updates.IsValidUpdate(3)
 	wantV = false
 	if gotV != wantV {
 		t.Errorf("wanted %v got %v", wantV, gotV)
+	}
+
+	gotMiddleSum := updates.GetSumValidUpdates()
+	wantMiddleSum := 143
+	if gotMiddleSum != wantMiddleSum {
+		t.Errorf("wanted %v got %v", gotMiddleSum, wantMiddleSum)
 	}
 
 }
