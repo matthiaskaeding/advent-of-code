@@ -24,31 +24,34 @@ func (p PageOrdering) GetPageThatMustFollow(k int) (int, bool) {
 
 type Update []int
 
-type PageNumbers struct {
+type Updates struct {
 	data []Update
 }
 
-func (p PageNumbers) GetUpdate(i int) Update {
+func (p Updates) GetUpdate(i int) Update {
 	return p.data[i]
 }
 
 func (u Update) GetPagesBefore(i int) Update {
 	var pagesBefore Update
-	for k := 0; k < i-1; k++ {
+	if i == 0 {
+		return pagesBefore
+	}
+	for k := 0; k < i; k++ {
 		pagesBefore = append(pagesBefore, u[k])
 	}
 	return pagesBefore
 }
 func (u Update) GetPagesAfter(i int) Update {
 	var pagesAfter Update
+
 	for k := i + 1; k < len(u); k++ {
 		pagesAfter = append(pagesAfter, u[k])
 	}
 	return pagesAfter
 }
 
-func (p PageNumbers) IsValidUpdate(i int, pageOrdering PageOrdering) bool {
-	u := p.GetUpdate(i)
+func (u Update) IsValidUpdate(pageOrdering PageOrdering) bool {
 	for j, page := range u {
 		pageThatMustFollow, exist := pageOrdering.GetPageThatMustFollow(page)
 		if !exist {
@@ -62,10 +65,10 @@ func (p PageNumbers) IsValidUpdate(i int, pageOrdering PageOrdering) bool {
 	return true
 }
 
-func ReadInput(file string) (PageOrdering, PageNumbers, error) {
+func ReadInput(file string) (PageOrdering, Updates, error) {
 	var (
 		pairs       PageOrdering
-		pageNumbers PageNumbers
+		pageNumbers Updates
 	)
 	pairData := make(map[int]int)
 
@@ -110,13 +113,13 @@ func ReadInput(file string) (PageOrdering, PageNumbers, error) {
 }
 
 func Solve() {
-	pageOrdering, pageNumbers, err := ReadInput("day05/input.txt")
+	pageOrdering, updates, err := ReadInput("day05/input.txt")
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Pairs: %v\n", pageOrdering)
-	fmt.Printf("Page numbers: %v\n", pageNumbers.GetUpdate(0))
+	fmt.Printf("Updates: %v\n", updates.GetUpdate(0))
 
 	// Do something
 }
