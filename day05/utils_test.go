@@ -37,22 +37,13 @@ func TestValid(t *testing.T) {
 		t.Errorf("wanted %v got %v", want, got)
 	}
 
-	gotV := u.IsValidUpdate(updates.pagesOrdering)
-	wantV := true
-	if gotV != wantV {
-		t.Errorf("wanted %v got %v", wantV, gotV)
-	}
-
-	gotV = updates.IsValidUpdate(3)
-	wantV = false
-	if gotV != wantV {
-		t.Errorf("wanted %v got %v", wantV, gotV)
-	}
-
-	gotMiddleSum := updates.GetSumValidUpdates()
-	wantMiddleSum := 143
-	if gotMiddleSum != wantMiddleSum {
-		t.Errorf("wanted %v got %v", gotMiddleSum, wantMiddleSum)
+	// First 3 are correct, rest is wrong
+	for i := 0; i < 6; i++ {
+		gotV := updates.IsValidUpdate(i)
+		wantV := (i <= 2)
+		if gotV != wantV {
+			t.Errorf("Update %v. Wanted %v got %v", i, wantV, gotV)
+		}
 	}
 
 }

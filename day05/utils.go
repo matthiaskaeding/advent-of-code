@@ -9,17 +9,20 @@ import (
 	"strings"
 )
 
+// Page ordering: for each number n maps the number that must be before n
 type PageOrdering struct {
-	data map[int]int
-	n    int
+	pagesBefore map[int][]int
+	pagesAfter  map[int][]int
 }
 
-func NewPageOrdering(data map[int]int) PageOrdering {
-	return PageOrdering{data, len(data)}
+func (p PageOrdering) GetPagesBefore(k int) ([]int, bool) {
+	o, exists := p.pagesBefore[k]
+	return o, exists
 }
-func (p PageOrdering) GetPageThatMustFollow(k int) (int, bool) {
-	PageThatMustFollow, exists := p.data[k]
-	return PageThatMustFollow, exists
+
+func (p PageOrdering) GetPagesAfter(k int) ([]int, bool) {
+	o, exists := p.pagesAfter[k]
+	return o, exists
 }
 
 type Update []int
@@ -56,23 +59,39 @@ func (u Update) GetPagesAfter(i int) Update {
 	return pagesAfter
 }
 
-func (u Update) IsValidUpdate(pageOrdering PageOrdering) bool {
-	for j, page := range u {
-		pageThatMustFollow, exist := pageOrdering.GetPageThatMustFollow(page)
-		if !exist {
+func (u Update) isValidUpdate(pageOrdering PageOrdering) bool {
+	for _, page := range u {
+		pagesBefore, exists := pageOrdering.GetPagesBefore(page)
+		if !exists {
 			continue
 		}
-		pagesBefore := u.GetPagesBefore(j)
-		if slices.Contains(pagesBefore, pageThatMustFollow) {
-			return false
+		indAfter := slices.Index(u, page)
+		for _, pageBefore := range pagesBefore {
+			indBefore := slices.Index(u, pageBefore) // -1 if not present so its fine
+			if indBefore > indAfter {
+				return false
+			}
 		}
+
+		//fmt.Printf("Page: %v\n", page)
+		// pageFirst := orderPair.first
+		// pageSecond := orderPair.second
+		//fmt.Printf("First: %v. Second: %v\n", pageFirst, pageSecond)
+
+		// if !slices.Contains(u, pageFirst) || !slices.Contains(u, pageSecond) {
+		// 	continue
+		// }
+		// if !(slices.Index(u, pageSecond) > slices.Index(u, pageFirst)) {
+		// 	return false
+		// }
+
 	}
 	return true
 }
 
 func (updates Updates) IsValidUpdate(i int) bool {
 	u := updates.GetUpdate(i)
-	return u.IsValidUpdate(updates.pagesOrdering)
+	return u.isValidUpdate(updates.pagesOrdering)
 }
 
 func (u Update) GetMiddleVal() int {
@@ -98,7 +117,9 @@ func ReadInput(file string) (Updates, error) {
 		updates     Updates
 		updatesData []Update
 	)
-	pairData := make(map[int]int)
+
+	pagesBefore := make(map[int][]int)
+	pagesAfter := make(map[int][]int)
 
 	inFile, err := os.Open(file)
 	if err != nil {
@@ -112,15 +133,17 @@ func ReadInput(file string) (Updates, error) {
 		if strings.Contains(line, "|") {
 			// page ordering
 			parts := strings.SplitN(line, "|", 2)
-			k, err := strconv.Atoi(parts[0])
+			first, err := strconv.Atoi(parts[0])
 			if err != nil {
 				return updates, err
 			}
-			v, err := strconv.Atoi(parts[1])
+			second, err := strconv.Atoi(parts[1])
 			if err != nil {
 				return updates, err
 			}
-			pairData[k] = v
+			pagesBefore[second] = append(pagesBefore[second], first)
+			pagesAfter[first] = append(pagesAfter[first], second)
+
 		} else if strings.Contains(line, ",") {
 			// Pages for update
 			parts := strings.Split(line, ",")
@@ -138,7 +161,7 @@ func ReadInput(file string) (Updates, error) {
 			continue
 		}
 	}
-	pageOrdering := NewPageOrdering(pairData)
+	pageOrdering := PageOrdering{pagesBefore, pagesAfter}
 	updates = Updates{updatesData, pageOrdering}
 	return updates, nil
 }
