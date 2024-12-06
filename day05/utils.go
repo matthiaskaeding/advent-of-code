@@ -5,9 +5,17 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 )
+
+type Pair struct {
+	first  int
+	second int
+}
+
+type PairMap map[Pair]bool
 
 // Page ordering: for each number n maps the number that must be before n
 type PageOrdering struct {
@@ -30,6 +38,31 @@ type Update []int
 type Updates struct {
 	data          []Update
 	pagesOrdering PageOrdering
+	pairMap       PairMap
+}
+
+func (u Updates) GetSortedUpdate(i int) Update {
+	ori := u.GetUpdate(i)
+	cpy := make(Update, len(ori))
+	copy(cpy, ori)
+	pairMap := u.pairMap
+
+	sort.Slice(cpy, func(i, j int) bool {
+		pageI, pageJ := cpy[i], cpy[j]
+		pair := Pair{pageI, pageJ}
+		pairIsSorted := pairMap[pair]
+		if pairIsSorted {
+			return true
+		}
+		reversedPair := Pair{pageJ, pageI}
+		reversedPairIsSorted := pairMap[reversedPair]
+		if reversedPairIsSorted {
+			return false
+		}
+		return false
+	})
+
+	return cpy
 }
 
 func (u Updates) Len() int {
@@ -73,18 +106,6 @@ func (u Update) isValidUpdate(pageOrdering PageOrdering) bool {
 			}
 		}
 
-		//fmt.Printf("Page: %v\n", page)
-		// pageFirst := orderPair.first
-		// pageSecond := orderPair.second
-		//fmt.Printf("First: %v. Second: %v\n", pageFirst, pageSecond)
-
-		// if !slices.Contains(u, pageFirst) || !slices.Contains(u, pageSecond) {
-		// 	continue
-		// }
-		// if !(slices.Index(u, pageSecond) > slices.Index(u, pageFirst)) {
-		// 	return false
-		// }
-
 	}
 	return true
 }
@@ -112,6 +133,18 @@ func (updates Updates) GetSumValidUpdates() int {
 	return sum
 }
 
+func (updates Updates) GetSumInValidUpdates() int {
+	sum := 0
+	for i := 0; i < updates.Len(); i++ {
+		isValid := updates.IsValidUpdate(i)
+		if !isValid {
+			middleVal := updates.GetSortedUpdate(i).GetMiddleVal()
+			sum += middleVal
+		}
+	}
+	return sum
+}
+
 func ReadInput(file string) (Updates, error) {
 	var (
 		updates     Updates
@@ -120,6 +153,7 @@ func ReadInput(file string) (Updates, error) {
 
 	pagesBefore := make(map[int][]int)
 	pagesAfter := make(map[int][]int)
+	pairMap := make(PairMap)
 
 	inFile, err := os.Open(file)
 	if err != nil {
@@ -144,6 +178,10 @@ func ReadInput(file string) (Updates, error) {
 			pagesBefore[second] = append(pagesBefore[second], first)
 			pagesAfter[first] = append(pagesAfter[first], second)
 
+			pair := Pair{first, second}
+			//fmt.Printf("Pair: %v, line: %v\n", pair, line)
+			pairMap[pair] = true
+
 		} else if strings.Contains(line, ",") {
 			// Pages for update
 			parts := strings.Split(line, ",")
@@ -162,7 +200,7 @@ func ReadInput(file string) (Updates, error) {
 		}
 	}
 	pageOrdering := PageOrdering{pagesBefore, pagesAfter}
-	updates = Updates{updatesData, pageOrdering}
+	updates = Updates{updatesData, pageOrdering, pairMap}
 	return updates, nil
 }
 
@@ -172,10 +210,13 @@ func Solve() {
 		panic(err)
 	}
 
-	fmt.Printf("Pairs: %v\n", updates.pagesOrdering)
-	fmt.Printf("Updates: %v\n", updates.GetUpdate(0))
-	middleSum := updates.GetSumValidUpdates()
-	fmt.Printf("Middle sum: %v\n", middleSum)
+	u := updates.GetUpdate(4)
+	uSorted := updates.GetSortedUpdate(4)
+	fmt.Println(u)
+	fmt.Println(uSorted)
+
+	sum := updates.GetSumInValidUpdates()
+	fmt.Printf("sum: %v\n", sum)
 
 	// Do something
 }
