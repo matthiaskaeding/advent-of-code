@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 )
 
 // Data model:
@@ -54,7 +53,7 @@ type Dims struct {
 	numRows int
 	numCols int
 }
-type VisitedLocations map[GuardPosition]bool
+type VisitedLocations map[GuardPosition]int
 
 type GuardMap struct {
 	obstacles        ObstacleMatrix
@@ -113,7 +112,7 @@ func ReadInput(file string) (GuardMap, error) {
 	}
 	dims := Dims{len(obstacles), len(obstacles[0])}
 	visitedLocations := make(VisitedLocations)
-	visitedLocations[guardPosition] = true
+	visitedLocations[guardPosition] = visitedLocations[guardPosition] + 1
 	return GuardMap{obstacles, direction, guardPosition, dims, visitedLocations}, nil
 }
 
@@ -125,19 +124,9 @@ func (guardMap *GuardMap) Print(i int) {
 		maxLines = i
 	}
 	s := "  "
-	numS := ""
-	for i := 0; i < guardMap.dims.numCols; i++ {
-		numS += strconv.Itoa(i)
-	}
-	s += numS + "\n"
 	for i := 0; i < maxLines; i++ {
-		s += strconv.Itoa(i) + " "
-		for _, j := range guardMap.obstacles[i] {
-			s += j
-		}
-		s += strconv.Itoa(i) + "\n"
+		fmt.Println(guardMap.obstacles[i])
 	}
-	s += "  " + numS
 	fmt.Println(s)
 }
 
@@ -155,7 +144,6 @@ func (guardMap *GuardMap) moveGuard() (bool, error) {
 	for !hitObstacle {
 		gi = gi + di
 		gj = gj + dj
-		fmt.Printf("gi: %v. gj: %v\n", gi, gj)
 		// Check if the poor guard is free
 		if gi < 0 || gi == guardMap.dims.numRows || gj < 0 || gj == guardMap.dims.numCols {
 			fmt.Printf("Final position: %v %v\n", gi, gj)
@@ -173,7 +161,7 @@ func (guardMap *GuardMap) moveGuard() (bool, error) {
 		}
 		guardMap.obstacles[gi][gj] = "X"
 		guardMap.guardPosition = GuardPosition{gi, gj}
-		guardMap.visitedLocations[guardMap.guardPosition] = true
+		guardMap.visitedLocations[guardMap.guardPosition] = guardMap.visitedLocations[guardMap.guardPosition] + 1
 	}
 	return guardIsFree, nil
 }
@@ -198,18 +186,6 @@ func Solve() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(guardMap.guardPosition)
-	fmt.Println(guardMap.direction)
-	fmt.Println(" ")
-	fmt.Println(guardMap.direction)
-
-	guardMap.Print(5)
-	guardMap.moveGuard()
-	guardMap.Print(5)
-	guardMap.moveGuard()
-	guardMap.Print(10)
-	guardMap.moveGuard()
-	guardMap.Print(10)
 
 	numSteps, err := guardMap.FreeGuard()
 	if err != nil {
@@ -217,16 +193,7 @@ func Solve() {
 	}
 	guardMap.Print(10)
 
-	n2 := 0
-	for i := 0; i < guardMap.dims.numRows; i++ {
-		for j := 0; j < guardMap.dims.numCols; j++ {
-			if guardMap.obstacles[i][j] == "X" {
-				n2 += 1
-			}
-		}
-	}
-
-	fmt.Printf("Number of steps: %v, n2 = %v\n", numSteps, n2)
+	fmt.Printf("Number of steps: %v\n", numSteps)
 
 	// Do something
 }
