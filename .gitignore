@@ -26,3 +26,5 @@ go.work.sum
 
 dayxx/
 *.pdf
+
+**/*input*.txt
