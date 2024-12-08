@@ -53,7 +53,7 @@ type Dims struct {
 	numRows int
 	numCols int
 }
-type VisitedLocations map[GuardPosition]int
+type VisitedLocations map[Direction]map[GuardPosition]bool
 
 type GuardMap struct {
 	obstacles        ObstacleMatrix
@@ -100,6 +100,7 @@ func ReadInput(file string) (GuardMap, error) {
 				direction = Direction("u")
 				row[j] = "u"
 				guardPosition = GuardPosition{i, j}
+				//fmt.Printf("GUARD POSITION : %v\n", guardPosition)
 			default:
 				row[j] = string(rune)
 			}
@@ -112,8 +113,22 @@ func ReadInput(file string) (GuardMap, error) {
 	}
 	dims := Dims{len(obstacles), len(obstacles[0])}
 	visitedLocations := make(VisitedLocations)
-	visitedLocations[guardPosition] = visitedLocations[guardPosition] + 1
-	return GuardMap{obstacles, direction, guardPosition, dims, visitedLocations}, nil
+	// Init the maps
+	visitedLocations[Direction("u")] = make(map[GuardPosition]bool)
+	visitedLocations[Direction("d")] = make(map[GuardPosition]bool)
+	visitedLocations[Direction("l")] = make(map[GuardPosition]bool)
+	visitedLocations[Direction("r")] = make(map[GuardPosition]bool)
+	visitedLocations[direction][guardPosition] = true
+	return GuardMap{
+		obstacles:        obstacles,
+		direction:        direction,
+		guardPosition:    guardPosition,
+		dims:             dims,
+		visitedLocations: visitedLocations}, nil
+}
+
+func (guardMap *GuardMap) SetObstacle(i, j int) {
+	guardMap.obstacles[i][j] = "#"
 }
 
 func (guardMap *GuardMap) Print(i int) {
@@ -146,7 +161,6 @@ func (guardMap *GuardMap) moveGuard() (bool, error) {
 		gj = gj + dj
 		// Check if the poor guard is free
 		if gi < 0 || gi == guardMap.dims.numRows || gj < 0 || gj == guardMap.dims.numCols {
-			fmt.Printf("Final position: %v %v\n", gi, gj)
 			return true, nil
 		}
 		hitObstacle = guardMap.obstacles[gi][gj] == "#"
@@ -161,7 +175,9 @@ func (guardMap *GuardMap) moveGuard() (bool, error) {
 		}
 		guardMap.obstacles[gi][gj] = "X"
 		guardMap.guardPosition = GuardPosition{gi, gj}
-		guardMap.visitedLocations[guardMap.guardPosition] = guardMap.visitedLocations[guardMap.guardPosition] + 1
+		// Initialise the maps
+
+		guardMap.visitedLocations[guardMap.direction][guardMap.guardPosition] = true
 	}
 	return guardIsFree, nil
 }
@@ -181,19 +197,107 @@ func (guardMap *GuardMap) FreeGuard() (int, error) {
 	return len(guardMap.visitedLocations), nil
 }
 
+// Moving until hitting an obstacle or loopihg
+func (guardMap *GuardMap) moveGuardLoop() (bool, bool, error) {
+	var (
+		guardIsFree, hitObstacle, isLoop bool
+	)
+	gi := guardMap.guardPosition[0]
+	gj := guardMap.guardPosition[1]
+	di, dj, err := guardMap.direction.Delta()
+	if err != nil {
+		return false, false, err
+	}
+
+	for !hitObstacle && !isLoop {
+		gi = gi + di
+		gj = gj + dj
+
+		// Check if the poor guard is free
+		if gi < 0 || gi == guardMap.dims.numRows || gj < 0 || gj == guardMap.dims.numCols {
+			return true, false, nil
+		}
+
+		hitObstacle = guardMap.obstacles[gi][gj] == "#"
+		if hitObstacle {
+			// Redo moving and change direction
+			gi = gi - di
+			gj = gj - dj
+			newDirection, err := guardMap.direction.Change()
+			if err != nil {
+				return false, isLoop, err
+			}
+			guardMap.direction = newDirection
+		}
+		guardMap.obstacles[gi][gj] = "X"
+		// Move guard
+		//fmt.Printf("%v, gj: %v\n", gi, gj)
+
+		guardMap.guardPosition = GuardPosition{gi, gj}
+		//fmt.Printf("Saved direction: %v\n", guardMap.visitedLocations[guardMap.guardPosition])
+		//fmt.Printf("Direction at  this location in past %v:\n",
+		//	guardMap.visitedLocations[guardMap.guardPosition])
+		isLoop = guardMap.visitedLocations[guardMap.direction][guardMap.guardPosition]
+		guardMap.visitedLocations[guardMap.direction][guardMap.guardPosition] = true
+	}
+	return guardIsFree, isLoop, nil
+}
+
+func (guardMap *GuardMap) FreeGuardLoop() (bool, bool, int, error) {
+	var (
+		isFree bool
+		isLoop bool
+		err    error
+	)
+	for !isFree && !isLoop {
+		isFree, isLoop, err = guardMap.moveGuardLoop()
+		if err != nil {
+			return isFree, isLoop, len(guardMap.visitedLocations), err
+		}
+	}
+	return isFree, isLoop, len(guardMap.visitedLocations), nil
+}
+
+func NewGuardMap(g GuardMap) GuardMap {
+	return GuardMap{
+		obstacles:        g.obstacles,
+		direction:        g.direction,
+		guardPosition:    g.guardPosition,
+		dims:             g.dims,
+		visitedLocations: g.visitedLocations,
+	}
+}
+
 func Solve() {
-	guardMap, err := ReadInput("day06/input_example.txt")
-	if err != nil {
-		panic(err)
+	guardMap0, _ := ReadInput("day06/input.txt")
+	// Figure out ALL visited locations visited by freeing the guard
+	guardMap0.FreeGuard()
+	locations := guardMap0.visitedLocations
+	visitedLocations := make(map[GuardPosition]bool)
+	for d := range locations {
+		for k := range locations[d] {
+			visitedLocations[k] = true
+		}
 	}
 
-	numSteps, err := guardMap.FreeGuard()
-	if err != nil {
-		fmt.Print(err)
+	numLoopLocs := 0
+	cntr := 0
+	for loc := range visitedLocations {
+		fmt.Printf("%v / %v\n", cntr, len(visitedLocations))
+		//fmt.Println(loc)
+		guardMap, _ := ReadInput("day06/input.txt")
+
+		guardMap.SetObstacle(loc[0], loc[1])
+		_, isLoop, _, err := guardMap.FreeGuardLoop()
+		if err != nil {
+			panic(err)
+		}
+
+		if isLoop {
+			numLoopLocs++
+		}
+		cntr++
 	}
-	guardMap.Print(10)
-
-	fmt.Printf("Number of steps: %v\n", numSteps)
-
+	fmt.Printf("numLoopLocs: %v. NumLocations: %v\n", numLoopLocs, len(locations))
 	// Do something
 }
