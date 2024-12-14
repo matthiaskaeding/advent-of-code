@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"slices"
 	"strings"
 )
 
@@ -51,23 +50,18 @@ func NewMap(rows []Row) Map {
 
 func (mp Map) IsAntinode(i int, j int) bool {
 	l := Loc{i, j}
-	for _, locations := range mp.positions {
-		differences := make([]float64, 0)
-		for _, loc := range locations {
-			d := l.Diff(loc)
-			differences = append(differences, d)
-		}
-		if len(differences) == 1 {
+	for sym, locations := range mp.positions {
+		if len(locations) == 1 {
 			return false
 		}
-		// differences[i] is the difference of l
-		// to locations[i]
-		for i := 0; i < len(differences); i++ {
-			d := differences[i]
-			dd := 2 * d
-			j := slices.Index(differences, dd)
-			if j != -1 {
-				location := locations[i]
+		if mp.rows[i][j] != "." && mp.rows[i][j] != "#" {
+			return true
+		}
+
+		fmt.Printf("Symbol: %v, locations: %v \n", sym, locations)
+		for i := 0; i < len(locations); i++ {
+			location := locations[i]
+			for j := i + 1; j < len(locations); j++ {
 				otherLocation := locations[j]
 				slope := location.Slope(otherLocation)
 				testSlope := location.Slope(l)
@@ -75,6 +69,7 @@ func (mp Map) IsAntinode(i int, j int) bool {
 					return true
 				}
 			}
+
 		}
 	}
 	return false
@@ -138,7 +133,7 @@ func Solve() {
 	fmt.Println()
 
 	fmt.Println()
-	tst := mp.IsAntinode(1, 3)
+	tst := mp.IsAntinode(0, 0)
 	fmt.Println(tst)
 
 	antinodes := mp.GetAntinodes()
