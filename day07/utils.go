@@ -59,13 +59,64 @@ func ParseLines(lines []string) (Equation, error) {
 			rhs[i] = append(rhs[i], rhsInt)
 		}
 	}
-
 	return Equation{lhs, rhs}, nil
-
 }
 
+func applyOperator(x int, y int, o string) int {
+	if o == "*" {
+		return x * y
+	} else {
+		return x + y
+	}
+}
+
+func genCombinations(lenNumbers int) [][]string {
+	// leNnumbers means lenNumbers - 1 operators,
+	// which means 2 ^ (lenNumbers - 1) possible combinations
+	nOperators := lenNumbers - 1
+	nCombinations := 1 << nOperators
+	var combinations [][]string
+
+	for i := 0; i < nCombinations; i++ {
+		combination := make([]string, nOperators)
+		for j := 0; j < nOperators; j++ {
+			if (i & (1 << j)) != 0 {
+				combination[j] = "*"
+			} else {
+				combination[j] = "+"
+			}
+		}
+		combinations = append(combinations, combination)
+	}
+	return combinations
+}
+
+// Apply operators left to right
+// What does this mean?
+// for instane for
+// a * b + c
+// its not
+// a * (b + c)
+// but instead (a * b) + c
+// a * b + c * d is than
+// ((a * b) + c) * d
+func applyAllOperators(numbers []int, operators []string) (int, error) {
+	if len(numbers)-1 != len(operators) {
+		return 0, fmt.Errorf("there must be one less operator then numbers, but are %v, %v",
+			len(numbers), len(operators))
+	}
+	x := applyOperator(numbers[0], numbers[1], operators[0])
+	for i := 1; i < len(operators); i++ {
+		y := numbers[i+1]
+		x = applyOperator(x, y, operators[i])
+	}
+	return x, nil
+}
+
+func 
+
 func Solve() {
-	lines, err := ReadInput("day07/input.txt")
+	lines, err := ReadInput("day07/input_example.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -77,5 +128,12 @@ func Solve() {
 		fmt.Println(lines[i])
 		fmt.Printf("lhs: %v. rhs: %v\n", equation.lhs[i], equation.rhs[i])
 	}
+
+	i := 1
+	res, err2 := applyAllOperators(equation.rhs[i], []string{"+", "*"})
+	if err2 != nil {
+		panic(err2)
+	}
+	fmt.Printf("Lhs: %v, rhs: %v  Res: %v\n", equation.lhs[i], equation.rhs[i], res)
 
 }
