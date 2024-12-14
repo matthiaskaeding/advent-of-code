@@ -26,3 +26,7 @@ go.work.sum
 
 dayxx/
 *.pdf
+
+**/*input*.txt
+
+.DS_Store
