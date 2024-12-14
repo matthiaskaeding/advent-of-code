@@ -1,6 +1,6 @@
 package main
 
-import d "advent/day07"
+import d "advent/day08"
 
 func main() {
 	d.Solve()
