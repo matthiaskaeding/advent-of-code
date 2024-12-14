@@ -67,28 +67,52 @@ func ParseLines(lines []string) (Equations, error) {
 }
 
 func applyOperator(x int, y int, o string) int {
-	if o == "*" {
+	switch o {
+	case "*":
 		return x * y
-	} else {
+	case "+":
 		return x + y
+	case "||":
+		out, _ := bangBang(x, y)
+		return out
+	default:
+		return 0
 	}
+}
+
+func bangBang(x int, y int) (int, error) {
+	xs := strconv.Itoa(x)
+	ys := strconv.Itoa(y)
+	val, err := strconv.Atoi(xs + ys)
+	if err != nil {
+		return 0, err
+	}
+	return val, err
 }
 
 func genCombinations(lenNumbers int) [][]string {
 	// leNnumbers means lenNumbers - 1 operators,
 	// which means 2 ^ (lenNumbers - 1) possible combinations
 	nOperators := lenNumbers - 1
-	nCombinations := 1 << nOperators
+	nCombinations := 1
+	for i := 0; i < nOperators; i++ {
+		nCombinations *= 3
+	}
 	var combinations [][]string
 
 	for i := 0; i < nCombinations; i++ {
 		combination := make([]string, nOperators)
+		n := i
 		for j := 0; j < nOperators; j++ {
-			if (i & (1 << j)) != 0 {
+			switch n % 3 {
+			case 0:
 				combination[j] = "*"
-			} else {
+			case 1:
 				combination[j] = "+"
+			case 2:
+				combination[j] = "||"
 			}
+			n /= 3
 		}
 		combinations = append(combinations, combination)
 	}
@@ -142,6 +166,9 @@ func Solve() {
 		panic(err)
 	}
 
+	comb := genCombinations(3)
+	fmt.Println(comb)
+
 	sum := 0
 	for i := 0; i < len(equations); i++ {
 		fmt.Printf("lhs: %v. rhs: %v\n", equations[i].lhs, equations[i].rhs)
@@ -155,7 +182,5 @@ func Solve() {
 		fmt.Printf("Res: %v, %v, \n\n", check, operators)
 	}
 	fmt.Printf("Res: %v \n", sum)
-
-	// fmt.Printf("Lhs: %v, rhs: %v  Res: %v\n", equation.lhs[i], equation.rhs[i], res)
 
 }
