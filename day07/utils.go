@@ -29,23 +29,24 @@ func ReadInput(file string) ([]string, error) {
 }
 
 type Equation struct {
-	lhs []int
-	rhs [][]int
+	lhs int
+	rhs []int
 }
+type Equations []Equation
 
-func ParseLines(lines []string) (Equation, error) {
-	lhs := make([]int, len(lines))
-	rhs := make([][]int, len(lines))
+func ParseLines(lines []string) (Equations, error) {
+
+	var equations Equations
 
 	for i, line := range lines {
 		splitted := strings.SplitN(line, ":", 2)
-		lhsI, err := strconv.Atoi(splitted[0])
+		lhs, err := strconv.Atoi(splitted[0])
 		if err != nil {
-			return Equation{}, fmt.Errorf("failed to parse equation i: %v %v", i, err)
+			return Equations{}, fmt.Errorf("failed to parse equation i: %v %v", i, err)
 		}
-		lhs[i] = lhsI
 
 		rhsStrings := strings.Split(splitted[1], " ")
+		rhs := make([]int, 0)
 		for _, rhsString := range rhsStrings {
 			rhsString = strings.TrimLeft(rhsString, " ")
 			if rhsString == "" {
@@ -53,13 +54,16 @@ func ParseLines(lines []string) (Equation, error) {
 			}
 			rhsInt, err := strconv.Atoi(rhsString)
 			if err != nil {
-				return Equation{},
+				return Equations{},
 					fmt.Errorf("failed to parse equation i in rhsStrings: %v %v", i, err)
 			}
-			rhs[i] = append(rhs[i], rhsInt)
+			rhs = append(rhs, rhsInt)
 		}
+		equation := Equation{lhs, rhs}
+		equations = append(equations, equation)
+
 	}
-	return Equation{lhs, rhs}, nil
+	return equations, nil
 }
 
 func applyOperator(x int, y int, o string) int {
@@ -113,27 +117,45 @@ func applyAllOperators(numbers []int, operators []string) (int, error) {
 	return x, nil
 }
 
-func 
+func checkAllCombinationsOfOperators(lhs int, rhs []int) (bool, []string, error) {
+	allOperatorCombinations := genCombinations(len(rhs))
+	for _, operators := range allOperatorCombinations {
+		res, err := applyAllOperators(rhs, operators)
+		if err != nil {
+			return false, []string{}, err
+		}
+		if res == lhs {
+			return true, operators, nil
+		}
+	}
+
+	return false, []string{}, nil
+}
 
 func Solve() {
-	lines, err := ReadInput("day07/input_example.txt")
+	lines, err := ReadInput("day07/input.txt")
 	if err != nil {
 		panic(err)
 	}
-	equation, err := ParseLines(lines)
+	equations, err := ParseLines(lines)
 	if err != nil {
 		panic(err)
-	}
-	for i := 0; i < 3; i++ {
-		fmt.Println(lines[i])
-		fmt.Printf("lhs: %v. rhs: %v\n", equation.lhs[i], equation.rhs[i])
 	}
 
-	i := 1
-	res, err2 := applyAllOperators(equation.rhs[i], []string{"+", "*"})
-	if err2 != nil {
-		panic(err2)
+	sum := 0
+	for i := 0; i < len(equations); i++ {
+		fmt.Printf("lhs: %v. rhs: %v\n", equations[i].lhs, equations[i].rhs)
+		check, operators, err := checkAllCombinationsOfOperators(equations[i].lhs, equations[i].rhs)
+		if err != nil {
+			panic(err)
+		}
+		if check {
+			sum += equations[i].lhs
+		}
+		fmt.Printf("Res: %v, %v, \n\n", check, operators)
 	}
-	fmt.Printf("Lhs: %v, rhs: %v  Res: %v\n", equation.lhs[i], equation.rhs[i], res)
+	fmt.Printf("Res: %v \n", sum)
+
+	// fmt.Printf("Lhs: %v, rhs: %v  Res: %v\n", equation.lhs[i], equation.rhs[i], res)
 
 }
