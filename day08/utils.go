@@ -129,7 +129,7 @@ func (m Map) Show() {
 }
 
 func Solve() {
-	lines, err := ReadInput("day08/input_example.txt")
+	lines, err := ReadInput("day08/input.txt")
 	if err != nil {
 		panic(err)
 	}
