@@ -31,32 +31,44 @@ func ReadInput(file string) string {
 
 }
 
-type Disc string
+type Disc []int
 
 func MakeDisc(s string) Disc {
-	var disc string
-	id := 0
+	var disc Disc
+	var id, right int
 	for i, r := range s {
 		blockSize := int(r - '0')
-		var right string
 		if i%2 == 0 {
-			right = strconv.Itoa(id)
+			right = id
 			id++
 		} else {
-			right = "."
+			right = -1
 		}
 		for j := 0; j < blockSize; j++ {
-			disc += right
+			disc = append(disc, right)
 		}
 	}
-	return Disc(disc)
+	return disc
+}
+
+func (d Disc) Show() {
+	s := ""
+	for _, x := range d {
+		if x == -1 {
+			s += "."
+		} else {
+			xs := strconv.Itoa(x)
+			s += xs
+		}
+	}
+	fmt.Println(s)
 }
 
 // Gives the indices [low, up] for first space
 func (d Disc) FindSpace() (int, int, bool) {
 	u := -1
 	for i := range d {
-		for j := i; j < len(d) && d[j] == 46; j++ {
+		for j := i; j < len(d) && d[j] == -1; j++ {
 			u = j
 		}
 		if u != -1 {
@@ -70,18 +82,17 @@ func IsNumber(r byte) bool {
 	return r >= '0' && r <= '9'
 }
 
-func (d Disc) GetReplacement(n int, u int) ([]int, []byte) {
+func (d Disc) GetReplacement(n int, u int) ([]int, []int) {
 	indices := []int{}
-	bytes := []byte{}
+	replacements := []int{}
 	for i := u; i >= 0 && len(indices) < n; i-- {
 		b := d[i]
-		if IsNumber(b) {
+		if b >= 0 {
 			indices = append(indices, i)
-			bytes = append(bytes, b)
+			replacements = append(replacements, b)
 		}
-
 	}
-	return indices, bytes
+	return indices, replacements
 }
 
 func (d Disc) Move() (Disc, bool) {
@@ -92,17 +103,22 @@ func (d Disc) Move() (Disc, bool) {
 	if found {
 		indices, _ = d.GetReplacement(u-l+1, len(d)-1)
 	}
-	db := []byte(d)
+
+	// Create a new slice with its own underlying array
+	db := make([]int, len(d))
+	copy(db, d) // Copy the elements from d to db
+
 	for i := l; i <= u; i++ {
 		posReplacement := indices[i-l]
 		if posReplacement < l {
 			return Disc(db), true
 		}
 		db[i] = db[posReplacement]
-		db[posReplacement] = 46
+		db[posReplacement] = -1
 	}
 	return Disc(db), false
 }
+
 func (d Disc) MoveAll() Disc {
 	d, done := d.Move()
 	for !done {
@@ -113,36 +129,24 @@ func (d Disc) MoveAll() Disc {
 
 func (d Disc) CompCheckSum() int {
 	checkSum := 0
-	for i, r := range d {
-		if IsNumber(byte(r)) {
-			bI := int(r - '0')
-			checkSum += i * bI
-		} else {
-			return checkSum
+	for i, x := range d {
+		if x == -1 {
+			break
 		}
+		checkSum += x * i
 	}
 	return checkSum
 }
 
 func Solve() {
-	line := ReadInput("day09/input_example.txt")
-	fmt.Println(line)
-	fmt.Println()
-
+	line := ReadInput("day09/input.txt")
 	disc := MakeDisc(line)
-	fmt.Println(disc)
 
-	l, u, found := disc.FindSpace()
-	fmt.Printf("%v %v %v\n", l, u, found)
-
-	//nmbrs := disc.GetRighmostNumbers(10, len(disc)-1)
-	//fmt.Println(nmbrs)
-	// Do something
 	fmt.Println()
-	fmt.Println(disc)
-	disc = disc.MoveAll()
-	fmt.Println(disc)
-	checkSum := disc.CompCheckSum()
+	disc.Show()
+	discMoved := disc.MoveAll()
+	discMoved.Show()
+	checkSum := discMoved.CompCheckSum()
 	fmt.Printf("Checksum: %v\n", checkSum)
 
 }
