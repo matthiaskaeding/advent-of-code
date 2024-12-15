@@ -31,29 +31,42 @@ func ReadInput(file string) string {
 
 }
 
-type Disc []int
+type Disc struct {
+	data  []int
+	sizes map[int]int // Maps file id to file size
+}
+
+func (d Disc) Len() int {
+	return len(d.data)
+}
+func (d Disc) Index(i int) int {
+	return d.data[i]
+}
 
 func MakeDisc(s string) Disc {
-	var disc Disc
+
+	var data []int
+	sizes := make(map[int]int)
 	var id, right int
 	for i, r := range s {
 		blockSize := int(r - '0')
 		if i%2 == 0 {
 			right = id
+			sizes[id] = blockSize
 			id++
 		} else {
 			right = -1
 		}
 		for j := 0; j < blockSize; j++ {
-			disc = append(disc, right)
+			data = append(data, right)
 		}
 	}
-	return disc
+	return Disc{data, sizes}
 }
 
 func (d Disc) Show() {
 	s := ""
-	for _, x := range d {
+	for _, x := range d.data {
 		if x == -1 {
 			s += "."
 		} else {
@@ -67,8 +80,8 @@ func (d Disc) Show() {
 // Gives the indices [low, up] for first space
 func (d Disc) FindSpace() (int, int, bool) {
 	u := -1
-	for i := range d {
-		for j := i; j < len(d) && d[j] == -1; j++ {
+	for i := range d.data {
+		for j := i; j < d.Len() && d.Index(j) == -1; j++ {
 			u = j
 		}
 		if u != -1 {
@@ -82,41 +95,53 @@ func IsNumber(r byte) bool {
 	return r >= '0' && r <= '9'
 }
 
-func (d Disc) GetReplacement(n int, u int) ([]int, []int) {
-	indices := []int{}
-	replacements := []int{}
-	for i := u; i >= 0 && len(indices) < n; i-- {
-		b := d[i]
-		if b >= 0 {
-			indices = append(indices, i)
-			replacements = append(replacements, b)
+// Returns val, l, u
+func (d Disc) GetReplacement(n int) (int, int, int) {
+	var bSize, replacement, l, u int
+	var exists bool
+	for i := u; i >= 0; i-- {
+		b := d.data[i]
+		if b == -1 {
+			continue
 		}
+		bSize, exists = d.sizes[b]
+		if !exists {
+			continue
+		}
+		if bSize > n {
+			delete(d.sizes, b)
+			continue
+		}
+		u = i
+		l = u - bSize + 1
+		replacement = b
 	}
-	return indices, replacements
+	return replacement, l, u
 }
 
 func (d Disc) Move() (Disc, bool) {
 	l, u, found := d.FindSpace()
-	var (
-		indices []int
-	)
+	var repl, lRepl, uRepl int
 	if found {
-		indices, _ = d.GetReplacement(u-l+1, len(d)-1)
+		repl, lRepl, uRepl = d.GetReplacement(u - l + 1)
 	}
 
 	// Create a new slice with its own underlying array
-	db := make([]int, len(d))
-	copy(db, d) // Copy the elements from d to db
+	db := make([]int, len(d.data))
+	copy(db, d.data) // Copy the elements from d to db
 
-	for i := l; i <= u; i++ {
-		posReplacement := indices[i-l]
+	sizeFound := uRepl - lRepl + 1
+	for i := 0; i <= sizeFound; i++ {
+		posReplacement := lRepl + i
 		if posReplacement < l {
-			return Disc(db), true
+			return Disc{db, d.sizes}, true
 		}
-		db[i] = db[posReplacement]
+		db[l+i] = repl
 		db[posReplacement] = -1
 	}
-	return Disc(db), false
+	delete(d.sizes, repl)
+
+	return Disc{db, d.sizes}, false
 }
 
 func (d Disc) MoveAll() Disc {
@@ -129,7 +154,7 @@ func (d Disc) MoveAll() Disc {
 
 func (d Disc) CompCheckSum() int {
 	checkSum := 0
-	for i, x := range d {
+	for i, x := range d.data {
 		if x == -1 {
 			break
 		}
@@ -139,7 +164,7 @@ func (d Disc) CompCheckSum() int {
 }
 
 func Solve() {
-	line := ReadInput("day09/input.txt")
+	line := ReadInput("day09/input_example.txt")
 	disc := MakeDisc(line)
 
 	fmt.Println()
