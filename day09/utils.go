@@ -7,6 +7,11 @@ import (
 	"strconv"
 )
 
+type interval struct {
+	lower int
+	upper int
+}
+
 func ReadInput(file string) string {
 
 	var lines []string
@@ -39,7 +44,7 @@ type Disc struct {
 func (d Disc) Len() int {
 	return len(d.data)
 }
-func (d Disc) Index(i int) int {
+func (d Disc) At(i int) int {
 	return d.data[i]
 }
 
@@ -78,76 +83,67 @@ func (d Disc) Show() {
 }
 
 // Gives the indices [low, up] for first space
-func (d Disc) FindSpace() (int, int, bool) {
-	u := -1
-	for i := range d.data {
-		for j := i; j < d.Len() && d.Index(j) == -1; j++ {
-			u = j
-		}
-		if u != -1 {
-			return i, u, true
+func (d Disc) FindSpace(size int) (interval, bool) {
+	for l := range d.data {
+		for j := l; j < d.Len() && d.At(j) == -1; j++ {
+			u := j
+			if u-l+1 == size {
+				return interval{l, u}, true
+			}
 		}
 	}
-	return 0, 0, false
+	return interval{}, false
 }
 
 func IsNumber(r byte) bool {
 	return r >= '0' && r <= '9'
 }
 
-// Returns val, l, u
-func (d Disc) GetReplacement(n int) (int, int, int) {
-	var bSize, replacement, l, u int
-	var exists bool
-	for i := u; i >= 0; i-- {
-		b := d.data[i]
+// Gets the replacement. For all files where we dont find space,
+// we delete the entry in d.sizes, so that we will skip those files in the future
+// Returns: replacement value, lower and upper position of space
+func (d *Disc) GetReplacement() (interval, interval, int, bool) {
+	for i := d.Len() - 1; i >= 0; i-- {
+		b := d.At(i)
 		if b == -1 {
 			continue
 		}
-		bSize, exists = d.sizes[b]
+		bSize, exists := d.sizes[b]
 		if !exists {
 			continue
 		}
-		if bSize > n {
+		intervalSpace, foundSpace := d.FindSpace(bSize)
+		if !foundSpace || intervalSpace.lower > i {
 			delete(d.sizes, b)
 			continue
 		}
-		u = i
-		l = u - bSize + 1
-		replacement = b
+		// i = 10, bsize = 1: i + 1 - 1 = 10 correct
+		// i = 10, bsize = 2: i - 2 + 1  = 9  correct
+		return intervalSpace, interval{i - bSize + 1, i}, b, true
 	}
-	return replacement, l, u
+	return interval{}, interval{}, 0, false
 }
 
-func (d Disc) Move() (Disc, bool) {
-	l, u, found := d.FindSpace()
-	var repl, lRepl, uRepl int
-	if found {
-		repl, lRepl, uRepl = d.GetReplacement(u - l + 1)
+func (d *Disc) Move() bool {
+	intervalSpace, intervalRepl, repl, replFound := d.GetReplacement()
+	if !replFound {
+		return false
 	}
 
-	// Create a new slice with its own underlying array
-	db := make([]int, len(d.data))
-	copy(db, d.data) // Copy the elements from d to db
+	intervalSize := intervalSpace.upper - intervalSpace.lower + 1
+	for i := 0; i < intervalSize; i++ {
+		d.data[intervalSpace.lower+i] = repl
+		d.data[intervalRepl.lower+i] = -1
 
-	sizeFound := uRepl - lRepl + 1
-	for i := 0; i <= sizeFound; i++ {
-		posReplacement := lRepl + i
-		if posReplacement < l {
-			return Disc{db, d.sizes}, true
-		}
-		db[l+i] = repl
-		db[posReplacement] = -1
 	}
-	delete(d.sizes, repl)
 
-	return Disc{db, d.sizes}, false
+	return true
 }
 
 func (d Disc) MoveAll() Disc {
-	d, done := d.Move()
-	for !done {
-		d, done = d.Move()
+	done := d.Move()
+	for done {
+		done = d.Move()
 	}
 	return d
 }
@@ -156,7 +152,7 @@ func (d Disc) CompCheckSum() int {
 	checkSum := 0
 	for i, x := range d.data {
 		if x == -1 {
-			break
+			continue
 		}
 		checkSum += x * i
 	}
@@ -169,9 +165,19 @@ func Solve() {
 
 	fmt.Println()
 	disc.Show()
-	discMoved := disc.MoveAll()
-	discMoved.Show()
-	checkSum := discMoved.CompCheckSum()
+	// disc.Move()
+	// disc.Show()
+	// disc.Move()
+	// disc.Show()
+	// disc.Move()
+	// disc.Show()
+	// disc.Move()
+	// disc.Show()
+	// disc.Move()
+
+	disc.MoveAll()
+	disc.Show()
+	checkSum := disc.CompCheckSum()
 	fmt.Printf("Checksum: %v\n", checkSum)
 
 }

@@ -30,3 +30,5 @@ dayxx/
 **/*input*.txt
 
 .DS_Store
+*.PNG
+playground/
