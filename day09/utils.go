@@ -160,20 +160,11 @@ func (d Disc) CompCheckSum() int {
 }
 
 func Solve() {
-	line := ReadInput("day09/input_example.txt")
+	line := ReadInput("day09/input.txt")
 	disc := MakeDisc(line)
 
 	fmt.Println()
 	disc.Show()
-	// disc.Move()
-	// disc.Show()
-	// disc.Move()
-	// disc.Show()
-	// disc.Move()
-	// disc.Show()
-	// disc.Move()
-	// disc.Show()
-	// disc.Move()
 
 	disc.MoveAll()
 	disc.Show()
