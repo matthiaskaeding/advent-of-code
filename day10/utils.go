@@ -107,7 +107,6 @@ type Trail map[Point]int
 func (m *Mat) checkInner(p Point, dest Point, points Trail) bool {
 	val := m.At(p.i, p.j)
 	neighbors := m.GetNeighbors(p)
-	out := false
 	for _, neighbor := range neighbors {
 		valNeigh := m.At(neighbor.i, neighbor.j)
 		if neighbor == dest {
@@ -118,10 +117,10 @@ func (m *Mat) checkInner(p Point, dest Point, points Trail) bool {
 		_, found := points[neighbor]
 		if valNeigh == val+1 && !found {
 			points[neighbor] = len(points)
-			out = m.checkInner(neighbor, dest, points)
+			m.checkInner(neighbor, dest, points)
 		}
 	}
-	return out
+	return false
 }
 
 func (m *Mat) Check(p Point, dest Point) (bool, Trail) {
