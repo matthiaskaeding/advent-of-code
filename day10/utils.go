@@ -4,12 +4,37 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 )
+
+var directions = [4]string{"u", "r", "d", "l"}
 
 type Mat struct {
 	rows [][]int
 	n    int
 	k    int
+}
+
+type Point struct {
+	i, j int
+}
+
+func ReadInput(file string) Mat {
+
+	var lines []string
+	inFile, err := os.Open(file)
+	if err != nil {
+		panic(err)
+	}
+	defer inFile.Close()
+
+	scanner := bufio.NewScanner(inFile)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		lines = append(lines, line)
+	}
+	return NewMat(lines)
 }
 
 func NewMat(lines []string) Mat {
@@ -35,9 +60,27 @@ func (m *Mat) At(i, j int) int {
 	return m.rows[i][j]
 }
 
-func (m Mat) Move(i, j int, direction string) (int, int) {
-	i2 := i
-	j2 := j
+func (m *Mat) IsInBounds(i, j int) bool {
+	if i < 0 || i >= m.n || j < 0 || j >= m.k {
+		return false
+	}
+	return true
+}
+
+func (m *Mat) GetNeighbors(p Point) []Point {
+	neighbors := make([]Point, 0)
+	for _, d := range directions {
+		p2, inBounds := m.Move(p, d)
+		if inBounds {
+			neighbors = append(neighbors, p2)
+		}
+	}
+	return neighbors
+}
+
+func (m Mat) Move(p Point, direction string) (Point, bool) {
+	i2 := p.i
+	j2 := p.j
 	switch direction {
 	case "u":
 		i2--
@@ -50,12 +93,7 @@ func (m Mat) Move(i, j int, direction string) (int, int) {
 	default:
 		panic("wrong direction")
 	}
-	// Check for out of bounds
-	if i2 < 0 || i2 >= m.n || j2 < 0 || j2 >= m.k {
-		return -1, -1
-	}
-	return i2, j2
-
+	return Point{i2, j2}, m.IsInBounds(i2, j2)
 }
 
 func (m *Mat) Show() {
@@ -64,26 +102,102 @@ func (m *Mat) Show() {
 	}
 }
 
-func ReadInput(file string) Mat {
+type Trail map[Point]int
 
-	var lines []string
-	inFile, err := os.Open(file)
-	if err != nil {
-		panic(err)
+func (m *Mat) checkInner(p Point, dest Point, points Trail) bool {
+	val := m.At(p.i, p.j)
+	neighbors := m.GetNeighbors(p)
+	out := false
+	for _, neighbor := range neighbors {
+		valNeigh := m.At(neighbor.i, neighbor.j)
+		if neighbor == dest {
+			points[neighbor] = len(points)
+			fmt.Println("HERE")
+			return true
+		}
+		_, found := points[neighbor]
+		if valNeigh == val+1 && !found {
+			points[neighbor] = len(points)
+			out = m.checkInner(neighbor, dest, points)
+		}
 	}
-	defer inFile.Close()
+	return out
+}
 
-	scanner := bufio.NewScanner(inFile)
+func (m *Mat) Check(p Point, dest Point) (bool, Trail) {
+	points := make(Trail, 0)
+	canReach := m.checkInner(p, dest, points)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		lines = append(lines, line)
+	return canReach, points
+}
+
+func (m Mat) ShowTrail(t Trail) {
+	for i := 0; i < m.k; i++ {
+		row := make([]string, 0)
+		for j := 0; j < m.n; j++ {
+			p := Point{i, j}
+			_, found := t[p]
+			if !found {
+				row = append(row, ".")
+			} else {
+				val := m.At(i, j)
+				row = append(row, strconv.Itoa(val))
+			}
+		}
+		fmt.Println(row)
 	}
-	return NewMat(lines)
+}
+
+func (m Mat) GetNines() []Point {
+	nines := make([]Point, 0)
+	for i := 0; i < m.k; i++ {
+		for j := 0; j < m.n; j++ {
+			if m.At(i, j) == 9 {
+				nines = append(nines, Point{i, j})
+			}
+		}
+	}
+	return nines
+}
+
+func (m Mat) GetTrailHeadSum() map[Point]int {
+	nines := m.GetNines()
+	trailHeadSums := make(map[Point]int)
+	for i := 0; i < m.k; i++ {
+		for j := 0; j < m.n; j++ {
+			val := m.At(i, j)
+			if val != 0 {
+				continue
+			}
+			src := Point{i, j}
+			for _, dest := range nines {
+				canReach, _ := m.Check(src, dest)
+				if canReach {
+					trailHeadSums[src]++
+				}
+			}
+		}
+	}
+	return trailHeadSums
+
 }
 
 func Solve() {
 	mat := ReadInput("day10/input_example.txt")
 	mat.Show()
-	// Do something
+
+	// canReach, trail := mat.Check(Point{0, 2}, Point{0, 1})
+	// fmt.Printf("Can reach destination = %v\nPoints:\n%v\n", canReach, trail)
+	// mat.ShowTrail(trail)
+	nines := mat.GetNines()
+	// fmt.Println(nines)
+	// // Do something
+	i := 1
+	nine := nines[i]
+	canReach, trail := mat.Check(Point{0, 4}, nine)
+	fmt.Printf("nine[%v] = %v\nCan reach: %v \n", i, nine, canReach)
+	mat.ShowTrail(trail)
+	trailHeadSum := mat.GetTrailHeadSum()
+	fmt.Printf("Trail head sum: %v\n", trailHeadSum)
+
 }
