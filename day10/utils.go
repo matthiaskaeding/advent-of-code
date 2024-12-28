@@ -61,17 +61,19 @@ func (m *Mat) At(i, j int) int {
 }
 
 func (m *Mat) IsInBounds(i, j int) bool {
-	if i < 0 || i >= m.n || j < 0 || j >= m.k {
-		return false
-	}
-	return true
+	return i >= 0 && i < m.n && j >= 0 && j < m.k
 }
 
 func (m *Mat) GetNeighbors(p Point) []Point {
 	neighbors := make([]Point, 0)
+	val := m.At(p.i, p.j)
 	for _, d := range directions {
 		p2, inBounds := m.Move(p, d)
-		if inBounds {
+		if !inBounds {
+			continue
+		}
+		valP2 := m.At(p2.i, p2.j)
+		if inBounds && valP2 == val+1 {
 			neighbors = append(neighbors, p2)
 		}
 	}
@@ -105,20 +107,23 @@ func (m *Mat) Show() {
 type Trail map[Point]int
 
 func (m *Mat) checkInner(p Point, dest Point, points Trail) bool {
-	val := m.At(p.i, p.j)
 	neighbors := m.GetNeighbors(p)
+
 	for _, neighbor := range neighbors {
-		valNeigh := m.At(neighbor.i, neighbor.j)
+		_, wasVisited := points[neighbor]
+		if wasVisited {
+			continue
+		}
+		points[neighbor] = len(points)
+
 		if neighbor == dest {
-			points[neighbor] = len(points)
-			fmt.Println("HERE")
 			return true
 		}
-		_, found := points[neighbor]
-		if valNeigh == val+1 && !found {
-			points[neighbor] = len(points)
-			m.checkInner(neighbor, dest, points)
+		canReach := m.checkInner(neighbor, dest, points)
+		if canReach {
+			return true
 		}
+
 	}
 	return false
 }
@@ -159,9 +164,10 @@ func (m Mat) GetNines() []Point {
 	return nines
 }
 
-func (m Mat) GetTrailHeadSum() map[Point]int {
+func (m Mat) GetTrailHeadSum() (int, map[Point]int) {
 	nines := m.GetNines()
 	trailHeadSums := make(map[Point]int)
+	sum := 0
 	for i := 0; i < m.k; i++ {
 		for j := 0; j < m.n; j++ {
 			val := m.At(i, j)
@@ -173,16 +179,17 @@ func (m Mat) GetTrailHeadSum() map[Point]int {
 				canReach, _ := m.Check(src, dest)
 				if canReach {
 					trailHeadSums[src]++
+					sum++
 				}
 			}
 		}
 	}
-	return trailHeadSums
+	return sum, trailHeadSums
 
 }
 
 func Solve() {
-	mat := ReadInput("day10/input_example.txt")
+	mat := ReadInput("day10/input.txt")
 	mat.Show()
 
 	// canReach, trail := mat.Check(Point{0, 2}, Point{0, 1})
@@ -196,7 +203,7 @@ func Solve() {
 	canReach, trail := mat.Check(Point{0, 4}, nine)
 	fmt.Printf("nine[%v] = %v\nCan reach: %v \n", i, nine, canReach)
 	mat.ShowTrail(trail)
-	trailHeadSum := mat.GetTrailHeadSum()
+	trailHeadSum, _ := mat.GetTrailHeadSum()
 	fmt.Printf("Trail head sum: %v\n", trailHeadSum)
 
 }
