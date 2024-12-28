@@ -1,0 +1,27 @@
+"func (m *Mat) checkInner(p Point, dest Point, points Trail) bool {
+	val := m.At(p.i, p.j)
+	neighbors := m.GetNeighbors(p)
+	for _, neighbor := range neighbors {
+		valNeigh := m.At(neighbor.i, neighbor.j)
+		if neighbor == dest {
+			points[neighbor] = len(points)
+			fmt.Println("HEERE")
+			return true
+		}
+		_, found := points[neighbor]
+		if valNeigh == val+1 && !found {
+			points[neighbor] = len(points)
+			fmt.Println("HEERE 2")
+			m.checkInner(neighbor, dest, points)
+		}
+	}
+	return false
+}
+
+func (m *Mat) Check(p Point, dest Point) (bool, Trail) {
+	points := make(Trail, 0)
+	CanReach9 := m.checkInner(p, dest, points)
+
+	return CanReach9, points
+}
+"
